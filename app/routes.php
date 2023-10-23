@@ -123,41 +123,4 @@ return function (App $app) {
   
       return $response->withHeader("Content-Type", "application/json");
   });
-  
-  
-
-    // delete data
-    $app->delete('/countries/{id}', function (Request $request, Response $response, $args) {
-        $currentId = $args['id'];
-        $db = $this->get(PDO::class);
-
-        try {
-            $query = $db->prepare('DELETE FROM countries WHERE id = ?');
-            $query->execute([$currentId]);
-
-            if ($query->rowCount() === 0) {
-                $response = $response->withStatus(404);
-                $response->getBody()->write(json_encode(
-                    [
-                        'message' => 'Data tidak ditemukan'
-                    ]
-                ));
-            } else {
-                $response->getBody()->write(json_encode(
-                    [
-                        'message' => 'country dengan id ' . $currentId . ' dihapus dari database'
-                    ]
-                ));
-            }
-        } catch (PDOException $e) {
-            $response = $response->withStatus(500);
-            $response->getBody()->write(json_encode(
-                [
-                    'message' => 'Database error ' . $e->getMessage()
-                ]
-            ));
-        }
-
-        return $response->withHeader("Content-Type", "application/json");
-    });
 };
