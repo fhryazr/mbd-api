@@ -12,11 +12,25 @@ return function (App $app) {
     $app->get('/produk', function (Request $request, Response $response) {
         $db = $this->get(PDO::class);
 
-        $query = $db->query('CALL GetProduk()');
-        $results = $query->fetchAll(PDO::FETCH_ASSOC);
-        $response->getBody()->write(json_encode($results));
+        try {
+            $query = $db->query('CALL GetProduk()');
 
-        return $response->withHeader('Content-Type', 'application/json');
+            if (!$query) {
+                // Jika query tidak berhasil, lempar pengecualian
+                throw new PDOException('Failed to execute the query');
+            }
+
+            $results = $query->fetchAll(PDO::FETCH_ASSOC);
+            $response->getBody()->write(json_encode($results));
+
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (PDOException $e) {
+            // Tangkap kesalahan dan berikan respon dengan status code 500 dan pesan kesalahan
+            $response = $response->withStatus(500);
+            $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+
+            return $response->withHeader('Content-Type', 'application/json');
+        }
     });
 
     // get by id

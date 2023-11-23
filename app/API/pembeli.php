@@ -10,34 +10,74 @@ return function (App $app) {
     // TABEL CUSTOMER
     // get
     $app->get('/pembeli', function (Request $request, Response $response) {
-        $db = $this->get(PDO::class);
+        try {
+            $db = $this->get(PDO::class);
 
-        $query = $db->query('CALL GetPembeli()');
-        $results = $query->fetchAll(PDO::FETCH_ASSOC);
-        $response->getBody()->write(json_encode($results));
+            // Check if the database connection is successful
+            if (!$db) {
+                throw new PDOException('Failed to connect to the database.');
+            }
 
-        return $response->withHeader('Content-Type', 'application/json');
+            $query = $db->query('CALL GetPembeli()');
+
+            // Check if the query execution is successful
+            if (!$query) {
+                throw new PDOException('Failed to execute the query.');
+            }
+
+            $results = $query->fetchAll(PDO::FETCH_ASSOC);
+            $response->getBody()->write(json_encode($results));
+
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (PDOException $e) {
+            $response = $response->withStatus(500);
+            $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+
+            return $response->withHeader('Content-Type', 'application/json');
+        }
     });
 
     // get by id
     $app->get('/pembeli/{id}', function (Request $request, Response $response, $args) {
-        $db = $this->get(PDO::class);
+        try {
+            $db = $this->get(PDO::class);
 
-        // Ambil id_pembeli dari parameter URL
-        $id_pembeli_param = $args['id'];
+            // Check if the database connection is successful
+            if (!$db) {
+                throw new PDOException('Failed to connect to the database.');
+            }
 
-        // Buat query untuk memanggil stored procedure
-        $query = $db->prepare('CALL GetPembeliByID(:id_pembeli_param)');
-        $query->bindParam(':id_pembeli_param', $id_pembeli_param, PDO::PARAM_STR);
-        $query->execute();
+            // Ambil id_pembeli dari parameter URL
+            $id_pembeli_param = $args['id'];
 
-        // Ambil hasil dari stored procedure
-        $results = $query->fetchAll(PDO::FETCH_ASSOC);
+            // Buat query untuk memanggil stored procedure
+            $query = $db->prepare('CALL GetPembeliByID(:id_pembeli_param)');
+            $query->bindParam(':id_pembeli_param', $id_pembeli_param, PDO::PARAM_STR);
+            $query->execute();
 
-        // Ubah hasil menjadi JSON
-        $response->getBody()->write(json_encode($results));
+            // Ambil hasil dari stored procedure
+            $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-        return $response->withHeader('Content-Type', 'application/json');
+            // Periksa apakah pengguna ditemukan
+            if (empty($results)) {
+                throw new PDOException('User Not Found');
+            }
+
+            // Ubah hasil menjadi JSON
+            $response->getBody()->write(json_encode($results));
+
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (PDOException $e) {
+            if ($e->getMessage() === 'User Not Found') {
+                $response = $response->withStatus(404);
+                $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+            } else {
+                $response = $response->withStatus(500);
+                $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+            }
+
+            return $response->withHeader('Content-Type', 'application/json');
+        }
     });
 
     // post user

@@ -14,4 +14,6 @@ return function (App $app) {
     $produkRoutes($app);
 
     // Tabel
+    $transaksiRoutes = require __DIR__.'/API/transaksi.php';
+    $transaksiRoutes($app);
 };
